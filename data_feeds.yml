@@ -1,7 +1,0 @@
-feeds:
-  - name: feed_name_1
-    url: http://example.com/feed1
-  - name: feed_name_2
-    url: http://example.com/feed2
-  - name: feed_name_3
-    url: http://example.com/feed3
