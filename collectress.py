@@ -13,6 +13,7 @@ Example usage:
     python script.py -f data_feeds.yaml -w path/to/directory
 """
 
+import time
 import os
 import argparse
 import gzip
@@ -155,6 +156,9 @@ def main():
         4. Downloads content for each feed.
         5. Writes content to disk if download is successful.
     """
+    # Record the start time
+    start_time = time.time()
+
     args = parse_args()
 
     # Path to your YAML file
@@ -171,6 +175,7 @@ def main():
     total_feeds_success = 0
     total_feeds_failed = 0
     total_data_downloaded = 0
+    total_runtime = 0
     successful_feeds = []
     failed_feeds = []
 
@@ -197,15 +202,22 @@ def main():
             total_feeds_failed += 1
             failed_feeds.append(feed['name'])
 
+    # Record the end time
+    end_time = time.time()
+
+    # Calculate the total runtime
+    total_runtime = end_time - start_time
+
     summary = {
         'message': "Collectress download summary",
         'timestamp': datetime.now().isoformat(),
         'total_feeds_processed': total_feeds_processed,
         'total_feeds_success': total_feeds_success,
         'total_feeds_failed': total_feeds_failed,
-        'total_data_downloaded': total_data_downloaded,
         'successful_feeds': successful_feeds,
         'failed_feeds': failed_feeds,
+        'total_data_downloaded_bytes': total_data_downloaded,
+        'total_runtime_seconds': total_runtime,
     }
     logger.info(summary)
 
