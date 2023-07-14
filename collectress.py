@@ -217,7 +217,7 @@ def main():
     total_runtime = end_time - start_time
 
     summary = {
-        'message': "Collectress download summary",
+        'message': f"{date_str.replace('/', '-')} collectress download summary",
         'timestamp': datetime.now().isoformat(),
         'total_feeds_processed': total_feeds_processed,
         'total_feeds_success': total_feeds_success,
