@@ -145,7 +145,7 @@ def write_to_disk(path, date_str, feed_name, content):
     except (OSError, TypeError) as err:
         print(f"Failed to write to {output_file} due to {str(err)}")
 
-def main():
+def main(): # pylint: disable=too-many-locals
     """
     Main function of the script.
 
