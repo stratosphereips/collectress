@@ -13,6 +13,7 @@ Example usage:
     python script.py -f data_feeds.yaml -w path/to/directory
 """
 
+import tempfile
 import time
 import os
 import argparse
@@ -134,16 +135,58 @@ def download_feed(feed_url):
         return None
 
 
+def should_replace(existing_file, new_content):
+    """
+    Check if a new file should replace an existing file.
+
+    The new content should replace the existing file if:
+    - The new content is larger than the existing file, or
+    - The new content has a different hash than the existing file.
+
+    Args:
+        existing_file (str): The path to the existing file.
+        new_content (bytes): The content to be written.
+
+    Returns:
+        bool: True if the new content should replace the existing file, False otherwise.
+    """
+    # If the existing file doesn't exist, there's nothing to replace
+    if not os.path.exists(existing_file):
+        return True
+
+    # Write the new content to a temporary file
+    with tempfile.NamedTemporaryFile(suffix=".txt.gz", delete=False) as temp_file:
+        with gzip.open(temp_file.name, 'wb') as gzip_file:
+            gzip_file.write(new_content)
+    temp_file_path = temp_file.name
+
+    # Compare the size of the temporary file and the existing file
+    if os.path.getsize(temp_file_path) > os.path.getsize(existing_file):
+        os.remove(temp_file_path)
+        return True
+
+    os.remove(temp_file_path)  # We're done with the temporary file now
+
+    # Otherwise, don't replace the existing file
+    return False
+
+
 def write_to_disk(path, date_str, feed_name, content):
     """
     Write content to disk as a gzipped file.
     """
     output_file = os.path.join(path, f"{date_str}_{feed_name}.txt.gz")
+
+    # If the file already exists and should not be replaced, return
+    if os.path.exists(output_file) and not should_replace(output_file, content):
+        return
+
     try:
         with gzip.open(output_file, 'wb') as file:
             file.write(content)
     except (OSError, TypeError) as err:
         print(f"Failed to write to {output_file} due to {str(err)}")
+
 
 def main(): # pylint: disable=too-many-locals
     """
