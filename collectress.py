@@ -27,7 +27,7 @@ from pythonjsonlogger import jsonlogger
 logger = logging.getLogger()
 
 # Create a handler that writes log records to a file
-handler = logging.FileHandler('collectress_log.json')
+handler = logging.FileHandler('log.json')
 
 # Create a formatter that outputs log records in JSON
 formatter = jsonlogger.JsonFormatter()
@@ -171,13 +171,15 @@ def main():
     feeds = load_feeds(yaml_file)
 
     # Statistical variables to log
-    total_feeds_processed = len(feeds)
+    total_feeds_processed = 0
     total_feeds_success = 0
     total_feeds_failed = 0
     total_data_downloaded = 0
     total_runtime = 0
     successful_feeds = []
     failed_feeds = []
+    success_rate = 0
+    error_rate = 0
 
     # For each feed in the YAML file
     for feed in feeds:
@@ -202,6 +204,12 @@ def main():
             total_feeds_failed += 1
             failed_feeds.append(feed['name'])
 
+    # Calculate success and error rates
+    if total_feeds_processed > 0:
+        success_rate = (total_feeds_success / total_feeds_processed) * 100
+        error_rate = (total_feeds_failed / total_feeds_processed) * 100
+
+
     # Record the end time
     end_time = time.time()
 
@@ -218,6 +226,8 @@ def main():
         'failed_feeds': failed_feeds,
         'total_data_downloaded_bytes': total_data_downloaded,
         'total_runtime_seconds': total_runtime,
+        'success_rate': success_rate,
+        'error_rate': error_rate,
     }
     logger.info(summary)
 
