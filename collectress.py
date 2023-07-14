@@ -17,9 +17,26 @@ import os
 import argparse
 import gzip
 from datetime import datetime
+import logging
 import requests
 import yaml
+from pythonjsonlogger import jsonlogger
 
+# Create a logger
+logger = logging.getLogger()
+
+# Create a handler that writes log records to a file
+handler = logging.FileHandler('collectress_log.json')
+
+# Create a formatter that outputs log records in JSON
+formatter = jsonlogger.JsonFormatter()
+handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(handler)
+
+# Set the severity level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+logger.setLevel(logging.INFO)
 
 def parse_args():
     """
@@ -149,8 +166,19 @@ def main():
     # Load feeds from the YAML file
     feeds = load_feeds(yaml_file)
 
+    # Statistical variables to log
+    total_feeds_processed = len(feeds)
+    total_feeds_success = 0
+    total_feeds_failed = 0
+    total_data_downloaded = 0
+    successful_feeds = []
+    failed_feeds = []
+
     # For each feed in the YAML file
     for feed in feeds:
+        # Increase feeds processed
+        total_feeds_processed += 1
+
         # Create a subdirectory with the current date
         date_str = datetime.now().strftime("%Y/%m/%d")
         output_dir = os.path.join(root_dir, date_str)
@@ -161,8 +189,25 @@ def main():
 
         # If the download was successful, write the file to disk
         if content is not None:
+            total_data_downloaded += len(content)
             write_to_disk(output_dir, date_str.replace("/", "_"), feed['name'], content)
+            successful_feeds.append(feed['name'])
+            total_feeds_success += 1
+        else:
+            total_feeds_failed += 1
+            failed_feeds.append(feed['name'])
 
+    summary = {
+        'message': "Collectress download summary",
+        'timestamp': datetime.now().isoformat(),
+        'total_feeds_processed': total_feeds_processed,
+        'total_feeds_success': total_feeds_success,
+        'total_feeds_failed': total_feeds_failed,
+        'total_data_downloaded': total_data_downloaded,
+        'successful_feeds': successful_feeds,
+        'failed_feeds': failed_feeds,
+    }
+    logger.info(summary)
 
 if __name__ == "__main__":
     main()
