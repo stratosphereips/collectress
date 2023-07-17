@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+=======
+*.swp
+data_feeds.yml
+log.json
