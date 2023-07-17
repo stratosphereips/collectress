@@ -1,4 +1,5 @@
 # Collectress
+[![Python package](https://github.com/stratosphereips/collectress/actions/workflows/python-checks.yml/badge.svg?branch=main)](https://github.com/stratosphereips/collectress/actions/workflows/python-checks.yml)
 
 Collectress is a Python tool designed for downloading web data feeds periodically and consistently. The data to download is specified in a YAML feed file. The data is downloaded and stored in a directory structure for each feed and in directories named by the current date.
 
