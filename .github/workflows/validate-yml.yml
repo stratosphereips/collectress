@@ -1,0 +1,14 @@
+name: Validate-YAML
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Validate YAML file
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: {max: 300}}}" data_feeds_EXAMPLE.yml
