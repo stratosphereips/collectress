@@ -2,9 +2,12 @@ import sys
 import os
 import shutil
 from os import path
+import gzip
 sys.path.append( path.dirname(path.dirname( path.abspath(__file__) ) ))
-from collectress import create_directory,write_to_disk,load_feeds
-
+from collectress import create_directory
+from collectress import write_to_disk
+from collectress import load_feeds
+from collectress import should_replace
 
 class TestDirectoryAndFileHandling:
     def test_create_directory(self):
@@ -29,6 +32,26 @@ class TestDirectoryAndFileHandling:
 
         # Clean up after the test by removing the directory
         shutil.rmtree('temp_dir')
+
+    def test_should_replace(self,tmp_path):
+        # Create a file with some content
+        existing_file = tmp_path / "existing_file.txt.gz"
+        new_content = b"New content"
+
+        # Since there's no existing file, should_replace should return True
+        assert should_replace(existing_file, new_content)
+
+        # Let's create an existing file
+        with gzip.open(existing_file, "wb") as f:
+            f.write(b"Existing content")
+
+        # The new content is smaller, so should_replace should return False
+        new_content = b"New"
+        assert not should_replace(existing_file, new_content)
+
+        # The new content is larger, so should_replace should return True
+        new_content = b"New content that is definitely longer than the existing content"
+        assert should_replace(existing_file, new_content)
 
 class TestInputs:
     def test_load_feeds_valid(self):
