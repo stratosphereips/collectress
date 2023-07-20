@@ -2,12 +2,14 @@ import sys
 import os
 import shutil
 from os import path
+from unittest.mock import patch
 import gzip
 sys.path.append( path.dirname(path.dirname( path.abspath(__file__) ) ))
 from collectress import create_directory
 from collectress import write_to_disk
 from collectress import load_feeds
 from collectress import should_replace
+from collectress import download_feed
 
 class TestDirectoryAndFileHandling:
     def test_create_directory(self):
@@ -89,3 +91,27 @@ class TestInputs:
 
         # Then
         assert feeds == []
+
+class TestDownloadFunctions:
+    def test_download_feed_200(self):
+        with patch('requests.get') as mock_get:
+            # Mock the response from requests.get
+            mock_get.return_value.status_code = 200
+            mock_get.return_value.content = b"Testing 200 OK"
+
+            # Call the function with a dummy URL
+            content = download_feed("https://dummyurl.com")
+
+            # Assert that the function correctly returned the mocked content
+            assert content == b"Testing 200 OK"
+
+    def test_download_feed_404(self):
+        with patch('requests.get') as mock_get:
+            # Mock the response from requests.get
+            mock_get.return_value.status_code = 404
+
+            # Call the function with a dummy URL
+            content = download_feed("https://dummyurl.com")
+
+            # Assert that the function correctly handled the 404 error
+            assert content is None
