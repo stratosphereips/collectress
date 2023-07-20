@@ -1,3 +1,4 @@
+import argparse
 import sys
 import os
 import shutil
@@ -10,6 +11,7 @@ from collectress import write_to_disk
 from collectress import load_feeds
 from collectress import should_replace
 from collectress import download_feed
+from collectress import parse_args
 
 class TestDirectoryAndFileHandling:
     def test_create_directory(self):
@@ -115,3 +117,12 @@ class TestDownloadFunctions:
 
             # Assert that the function correctly handled the 404 error
             assert content is None
+
+class TestCommandArguments:
+
+    @patch('argparse.ArgumentParser.parse_args',
+           return_value=argparse.Namespace(feed='test_feed.yaml', workdir='test_dir'))
+    def test_parse_args(self, mock_args):
+        args = parse_args()
+        assert args.feed == 'test_feed.yaml'
+        assert args.workdir == 'test_dir'
