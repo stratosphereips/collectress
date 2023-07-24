@@ -1,7 +1,10 @@
 feeds:
-  - name: feed_name_1
-    url: http://example.com/feed1
-  - name: feed_name_2
-    url: http://example.com/feed2
-  - name: feed_name_3
-    url: http://example.com/feed3
+  - name: feed_name_1.txt
+    org: feed_1_organisation_name
+    url: http://example.com/feed_name_1.txt
+  - name: feed_name_2.json
+    org: feed_2_organisation_name
+    url: http://example.com/feed_name_2.json
+  - name: feed_name_3.csv
+    org: feed_3_organisation_name
+    url: http://example.com/feed_name_3.csv
