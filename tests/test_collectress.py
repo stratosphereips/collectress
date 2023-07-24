@@ -29,10 +29,10 @@ class TestDirectoryAndFileHandling:
         os.makedirs('temp_dir', exist_ok=True)
 
         # Call the function with test data
-        write_to_disk('temp_dir', 'test_date', 'test_feed', b'test_content')
+        write_to_disk('temp_dir', 'test_date', 'test_org', 'test_feed', b'test_content')
 
         # Assert that the file now exists
-        assert os.path.isfile('temp_dir/test_date_test_feed.txt.gz')
+        assert os.path.isfile('temp_dir/test_date_test_org_test_feed.txt.gz')
 
         # Clean up after the test by removing the directory
         shutil.rmtree('temp_dir')
