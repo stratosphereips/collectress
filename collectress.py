@@ -171,11 +171,11 @@ def should_replace(existing_file, new_content):
     return False
 
 
-def write_to_disk(path, date_str, feed_name, content):
+def write_to_disk(path, date_str, feed_org, feed_name, content):
     """
     Write content to disk as a gzipped file.
     """
-    output_file = os.path.join(path, f"{date_str}_{feed_name}.txt.gz")
+    output_file = os.path.join(path, f"{date_str}_{feed_org}_{feed_name}.txt.gz")
 
     # If the file already exists and should not be replaced, return
     if os.path.exists(output_file) and not should_replace(output_file, content):
@@ -240,7 +240,11 @@ def main(): # pylint: disable=too-many-locals
         # If the download was successful, write the file to disk
         if content is not None:
             total_data_downloaded += len(content)
-            write_to_disk(output_dir, date_str.replace("/", "_"), feed['name'], content)
+            write_to_disk(output_dir,
+                          date_str.replace("/", "_"),
+                          feed['org'],
+                          feed['name'],
+                          content)
             successful_feeds.append(feed['name'])
             total_feeds_success += 1
         else:
