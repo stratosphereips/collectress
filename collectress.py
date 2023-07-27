@@ -243,8 +243,6 @@ def main(): # pylint: disable=too-many-locals
     # Check expired eTags
     remove_old_etags(etag_cache, args.ecache)
 
-    input("Enter your value: ")
-
     # Statistical variables to log
     total_feeds_processed = 0
     total_feeds_not_modified = 0
