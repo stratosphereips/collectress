@@ -22,6 +22,7 @@ from datetime import datetime
 import logging
 import requests
 import yaml
+from lib.etag_cache import load_etag_cache, save_etag_cache, add_to_etag_cache
 from pythonjsonlogger import jsonlogger
 
 # Create a logger
@@ -45,7 +46,8 @@ def parse_args():
     Parse command-line arguments.
 
     The function expects two command-line arguments:
-    -f or --feedfile: The path to the YAML file containing the feeds.
+    -e or --etagcache: The path to the YAML file containing the feeds.
+    -f or --feed: The path to the YAML file containing the feeds.
     -w or --workdir: The path to the root directory for output.
 
     Returns:
@@ -57,6 +59,7 @@ def parse_args():
 
 
     parser = argparse.ArgumentParser(description='Programatically download feeds from YAML file.')
+    parser.add_argument('-e', '--ecache', required=True, help='eTag cache for optimizing downloads')
     parser.add_argument('-f', '--feed', required=True, help='YAML file containing the feeds')
     parser.add_argument('-w', '--workdir', required=True, help='The root of the output directory')
     return parser.parse_args()
@@ -213,6 +216,9 @@ def main(): # pylint: disable=too-many-locals
     # Load feeds from the YAML file
     feeds = load_feeds(yaml_file)
 
+    # Load etag cache from disk
+    etag_cache = load_etag_cache(args.ecache)
+
     # Statistical variables to log
     total_feeds_processed = 0
     total_feeds_success = 0
@@ -235,7 +241,7 @@ def main(): # pylint: disable=too-many-locals
         create_directory(output_dir)
 
         # Download the file from feed's url
-        content = download_feed(feed['url'])
+        content, etag = download_feed(feed['url'], etag_cache)
 
         # If the download was successful, write the file to disk
         if content is not None:
@@ -262,6 +268,9 @@ def main(): # pylint: disable=too-many-locals
 
     # Calculate the total runtime
     total_runtime = end_time - start_time
+
+    # Save the ETag cache
+    save_etag_cache(args.ecache, etag_cache)
 
     summary = {
         'message': f"{date_str.replace('/', '-')} collectress download summary",
