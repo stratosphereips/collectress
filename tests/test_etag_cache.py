@@ -3,6 +3,7 @@ import json
 import sys
 import tempfile
 from os import path
+from unittest.mock import ANY
 sys.path.append( path.dirname(path.dirname( path.abspath(__file__) ) ))
 from lib.etag_cache import load_etag_cache
 from lib.etag_cache import add_to_etag_cache
@@ -85,3 +86,26 @@ class TestEtagCache:
 
         # Assert that the cache has not been modified
         assert len(etag_cache) == 2
+
+    def test_add_to_etag_cache(self):
+        # Create a sample etag_cache dictionary
+        etag_cache = {
+            "https://dummyurl.com/feed1.xml": {
+                "etag": "etag1",
+                "feed_name": "Feed 1",
+                "feed_organization": "Organization 1",
+                "download_date": "2023-07-21T14:30:16.123456"
+            }
+        }
+
+        # Call the function to add an etag to the cache
+        add_to_etag_cache(etag_cache, "etag2", "https://dummyurl.com/feed2.xml", "Feed 2", "Organization 2")
+
+        # Assert that the etag has been added to the cache
+        assert "https://dummyurl.com/feed2.xml" in etag_cache
+        assert etag_cache["https://dummyurl.com/feed2.xml"] == {
+            "etag": "etag2",
+            "feed_name": "Feed 2",
+            "feed_organization": "Organization 2",
+            "download_date": ANY  # We can't know the exact datetime
+        }
