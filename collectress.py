@@ -23,6 +23,12 @@ import logging
 import requests
 import yaml
 from pythonjsonlogger import jsonlogger
+from lib.etag_cache import load_etag_cache
+from lib.etag_cache import add_to_etag_cache
+from lib.etag_cache import remove_from_etag_cache
+from lib.etag_cache import copy_file_from_cache
+from lib.etag_cache import save_etag_cache
+from lib.etag_cache import remove_old_etags
 
 # Create a logger
 logger = logging.getLogger()
@@ -45,7 +51,8 @@ def parse_args():
     Parse command-line arguments.
 
     The function expects two command-line arguments:
-    -f or --feedfile: The path to the YAML file containing the feeds.
+    -e or --etagcache: The path to the YAML file containing the feeds.
+    -f or --feed: The path to the YAML file containing the feeds.
     -w or --workdir: The path to the root directory for output.
 
     Returns:
@@ -57,6 +64,7 @@ def parse_args():
 
 
     parser = argparse.ArgumentParser(description='Programatically download feeds from YAML file.')
+    parser.add_argument('-e', '--ecache', required=True, help='eTag cache for optimizing downloads')
     parser.add_argument('-f', '--feed', required=True, help='YAML file containing the feeds')
     parser.add_argument('-w', '--workdir', required=True, help='The root of the output directory')
     return parser.parse_args()
@@ -106,33 +114,49 @@ def create_directory(path):
         print(f"Failed to create directory {path} due to {str(err)}")
 
 
-def download_feed(feed_url):
+def download_feed(feed_url, etag_cache):
     """
     Download a feed from a given URL.
 
     This function sends a GET request to the provided URL and returns the response
-    content if the status code is 200. If the status code is not 200, or if an error
-    occurs during the request, the function will print an error message and return None.
+    content, the ETag of the response, and a status code. The status code can be
+    one of the following:
+    - "success": The feed was downloaded successfully.
+    - "not_modified": The feed was not downloaded because the ETag has
+                      not changed since the last download.
+    - "error": There was an error during the download.
 
     Args:
         feed_url (str): The URL of the feed to be downloaded.
+        etag_cache (dict): A dictionary that maps feed URLs to ETags.
 
     Returns:
-        bytes: The content of the response if the request is successful; otherwise, None.
-
-    Raises:
-        Exception: An exception is raised if there's an error during the request,
-                   such as a timeout error or a connection error.
+        tuple: A tuple of three items: the content of the response
+               (or None if the download was not successful or necessary),
+               the ETag of the response (or None if there was an error),
+               and a status code.
     """
+    headers = {}
+    if feed_url in etag_cache:
+        headers['If-None-Match'] = etag_cache[feed_url]['etag']
+
     try:
-        response = requests.get(feed_url)
-        if response.status_code != 200:
-            print(f"Failed to download {feed_url}. Status code: {response.status_code}")
-            return None
-        return response.content
+        response = requests.get(feed_url, headers=headers)
+
+        # If response is 200, file is downloaded and returned
+        if response.status_code == 200:
+            return response.content, response.headers.get('ETag'), "success"
+
+        # If response is 304, file is not downloaded
+        if response.status_code == 304:
+            return None, None, "not_modified"
+
+        # Any other case is considered failure and error is returned
+        print(f"Failed to download {feed_url}. Status code: {response.status_code}")
+        return None, None, "error"
     except requests.RequestException as err:
         print(f"Failed to download {feed_url} due to {str(err)}")
-        return None
+        return None, None, "error"
 
 
 def should_replace(existing_file, new_content):
@@ -213,13 +237,21 @@ def main(): # pylint: disable=too-many-locals
     # Load feeds from the YAML file
     feeds = load_feeds(yaml_file)
 
+    # Load etag cache from disk
+    etag_cache = load_etag_cache(args.ecache)
+
+    # Check expired eTags
+    remove_old_etags(etag_cache, args.ecache)
+
     # Statistical variables to log
     total_feeds_processed = 0
+    total_feeds_not_modified = 0
     total_feeds_success = 0
     total_feeds_failed = 0
     total_data_downloaded = 0
     total_runtime = 0
     successful_feeds = []
+    not_modified_feeds = []
     failed_feeds = []
     success_rate = 0
     error_rate = 0
@@ -235,25 +267,47 @@ def main(): # pylint: disable=too-many-locals
         create_directory(output_dir)
 
         # Download the file from feed's url
-        content = download_feed(feed['url'])
+        content, etag, status = download_feed(feed['url'], etag_cache)
 
         # If the download was successful, write the file to disk
-        if content is not None:
-            total_data_downloaded += len(content)
+        if status == "success":
+            # Store the ETag in the cache
+            add_to_etag_cache(etag_cache, etag, feed['url'], feed['name'], feed['org'])
+
+            # Save the content to disk
             write_to_disk(output_dir,
                           date_str.replace("/", "_"),
                           feed['org'],
                           feed['name'],
                           content)
+
+            # Record metrics
+            total_data_downloaded += len(content)
             successful_feeds.append(feed['name'])
             total_feeds_success += 1
+        elif status == "not_modified":
+            # The file has not changed since yesterday
+            # Copy file from yesterday to today
+            if copy_file_from_cache(root_dir, feed):
+                # Record metrics
+                not_modified_feeds.append(feed['name'])
+                total_feeds_not_modified += 1
+            else:
+                print("copy_file_from_cache: failed")
+                # The file download failed, remove etag from cache
+                remove_from_etag_cache(feed['url'], etag_cache)
+                # Record metrics
+                total_feeds_failed += 1
+                failed_feeds.append(feed['name'])
+
         else:
+            # The file download failed
             total_feeds_failed += 1
             failed_feeds.append(feed['name'])
 
     # Calculate success and error rates
     if total_feeds_processed > 0:
-        success_rate = (total_feeds_success / total_feeds_processed) * 100
+        success_rate = ((total_feeds_success+total_feeds_not_modified)/total_feeds_processed) * 100
         error_rate = (total_feeds_failed / total_feeds_processed) * 100
 
 
@@ -263,14 +317,19 @@ def main(): # pylint: disable=too-many-locals
     # Calculate the total runtime
     total_runtime = end_time - start_time
 
+    # Save the ETag cache
+    save_etag_cache(args.ecache, etag_cache)
+
     summary = {
         'message': f"{date_str.replace('/', '-')} collectress download summary",
         'timestamp': datetime.now().isoformat(),
         'total_feeds_processed': total_feeds_processed,
+        'total_feeds_not_modified': total_feeds_not_modified,
         'total_feeds_success': total_feeds_success,
         'total_feeds_failed': total_feeds_failed,
-        'successful_feeds': successful_feeds,
-        'failed_feeds': failed_feeds,
+        'feeds_not_modified': not_modified_feeds,
+        'feeds_successful': successful_feeds,
+        'feeds_failed': failed_feeds,
         'total_data_downloaded_bytes': total_data_downloaded,
         'total_runtime_seconds': total_runtime,
         'success_rate': success_rate,

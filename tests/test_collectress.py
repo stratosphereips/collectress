@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 import argparse
 import sys
 import os
@@ -100,12 +101,31 @@ class TestDownloadFunctions:
             # Mock the response from requests.get
             mock_get.return_value.status_code = 200
             mock_get.return_value.content = b"Testing 200 OK"
+            mock_get.return_value.headers = {'ETag': 'some_etag'}
 
             # Call the function with a dummy URL
-            content = download_feed("https://dummyurl.com")
+            content, etag, status = download_feed("https://dummyurl.com", {})
 
             # Assert that the function correctly returned the mocked content
             assert content == b"Testing 200 OK"
+            assert etag == 'some_etag'
+            assert status == 'success'
+
+    def test_download_feed_304(self):
+        with patch('requests.get') as mock_get:
+            # Mock the response from requests.get
+            mock_get.return_value.status_code = 304
+
+            # Create a dummy ETag cache
+            etag_cache = {"https://dummyurl.com": {"etag": "some_etag"}}
+
+            # Call the function with a dummy URL
+            content, etag, status = download_feed("https://dummyurl.com", etag_cache)
+
+            # Assert that the function correctly handled the 304 response
+            assert content is None
+            assert etag is None
+            assert status == 'not_modified'
 
     def test_download_feed_404(self):
         with patch('requests.get') as mock_get:
@@ -113,10 +133,12 @@ class TestDownloadFunctions:
             mock_get.return_value.status_code = 404
 
             # Call the function with a dummy URL
-            content = download_feed("https://dummyurl.com")
+            content, etag, status = download_feed("https://dummyurl.com", {})
 
             # Assert that the function correctly handled the 404 error
             assert content is None
+            assert etag is None
+            assert status == 'error'
 
 class TestCommandArguments:
 
