@@ -101,7 +101,11 @@ class TestEtagCache:
         }
 
         # Call the function to add an etag to the cache
-        add_to_etag_cache(etag_cache, "etag2", "https://dummyurl.com/feed2.xml", "Feed 2", "Organization 2")
+        add_to_etag_cache(etag_cache,
+                          "etag2",
+                          "https://dummyurl.com/feed2.xml",
+                          "Feed 2",
+                          "Organization 2")
 
         # Assert that the etag has been added to the cache
         assert "https://dummyurl.com/feed2.xml" in etag_cache
