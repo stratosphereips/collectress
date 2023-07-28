@@ -151,7 +151,7 @@ class TestEtagCache:
         root_dir = '/path/to/root_dir'
 
         # Case 1: yesterday's file exists, today's file does not
-        mock_isfile.side_effect = [True, False]
+        mock_isfile.side_effect = [False, True]  # Reversed the order
         assert copy_file_from_cache(root_dir, feed) is True
         mock_copy.assert_called_once()
 
@@ -159,17 +159,17 @@ class TestEtagCache:
         mock_copy.reset_mock()
 
         # Case 2: yesterday's file does not exist
-        mock_isfile.side_effect = [False, False]
+        mock_isfile.side_effect = [False, False]  # No file exists
         assert copy_file_from_cache(root_dir, feed) is False
         mock_copy.assert_not_called()
 
         # Case 3: yesterday's file exists, today's file also exists
-        mock_isfile.side_effect = [True, True]
+        mock_isfile.side_effect = [True, True]  # Both files exist
         assert copy_file_from_cache(root_dir, feed) is True
         mock_copy.assert_not_called()
 
         # Case 4: IOError when attempting to copy file
-        mock_isfile.side_effect = [True, False]
+        mock_isfile.side_effect = [False, True]  # yesterday's file exists, today's file does not
         mock_copy.side_effect = IOError()
         assert copy_file_from_cache(root_dir, feed) is False
 
