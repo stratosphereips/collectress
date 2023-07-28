@@ -21,19 +21,25 @@ Collectress is a Python tool designed for downloading web data feeds periodicall
 - Tracks and logs failed download feeds
 - Calculates and logs success and error rates
 - Records total script execution time
+- Implements eTag cache to optimise network donwloads
 
 ## Usage
 
-Collectress can be run from the command line as follows:
+Collectress can be run from the command line as follows (a `log.json` will be created upon execution):
 
 ```bash
-python collectress.py -f data_feeds.yaml -w data_feeds/
+python collectress.py -f data_feeds.yaml -w data_feeds/ -e etag_cache.json
 ```
 
 Parameters:
-
- - -f, --feedfile (required): Path to the YAML file containing the feeds
- - -w, --workdir (required): Path to the root directory for output
+```bash
+  -h, --help            show this help message and exit
+  -e ECACHE, --ecache ECACHE
+                        eTag cache for optimizing downloads
+  -f FEED, --feed FEED  YAML file containing the feeds
+  -w WORKDIR, --workdir WORKDIR
+                        The root of the output directory
+```
 
 # About
 
