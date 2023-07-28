@@ -270,7 +270,21 @@ def main(): # pylint: disable=too-many-locals
         content, etag, status = download_feed(feed['url'], etag_cache)
 
         # If the download was successful, write the file to disk
-        if status == "success":
+        if status == "not_modified":
+            # The file has not changed since yesterday
+            # Copy file from yesterday to today
+            if copy_file_from_cache(root_dir, feed):
+                # Record metrics
+                not_modified_feeds.append(feed['name'])
+                total_feeds_not_modified += 1
+            else:
+                print("copy_file_from_cache: failed")
+                # The file download failed, remove etag from cache
+                remove_from_etag_cache(feed['url'], etag_cache)
+                # Record metrics
+                total_feeds_failed += 1
+                failed_feeds.append(feed['name'])
+        elif status == "success":
             # Store the ETag in the cache
             add_to_etag_cache(etag_cache, etag, feed['url'], feed['name'], feed['org'])
 
@@ -285,21 +299,6 @@ def main(): # pylint: disable=too-many-locals
             total_data_downloaded += len(content)
             successful_feeds.append(feed['name'])
             total_feeds_success += 1
-        elif status == "not_modified":
-            # The file has not changed since yesterday
-            # Copy file from yesterday to today
-            if copy_file_from_cache(root_dir, feed):
-                # Record metrics
-                not_modified_feeds.append(feed['name'])
-                total_feeds_not_modified += 1
-            else:
-                print("copy_file_from_cache: failed")
-                # The file download failed, remove etag from cache
-                remove_from_etag_cache(feed['url'], etag_cache)
-                # Record metrics
-                total_feeds_failed += 1
-                failed_feeds.append(feed['name'])
-
         else:
             # The file download failed
             total_feeds_failed += 1
