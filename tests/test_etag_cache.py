@@ -39,3 +39,49 @@ class TestEtagCache:
 
         # Assert that the loaded data matches the original data
         assert loaded_etag_data == etag_data
+
+    def test_remove_from_etag_cache(self):
+        # Create a sample etag_cache dictionary
+        etag_cache = {
+            "https://dummyurl.com/feed1.xml": {
+                "etag": "etag1",
+                "feed_name": "Feed 1",
+                "feed_organization": "Organization 1",
+                "download_date": "2023-07-21T14:30:16.123456"
+            },
+            "https://dummyurl.com/feed2.xml": {
+                "etag": "etag2",
+                "feed_name": "Feed 2",
+                "feed_organization": "Organization 2",
+                "download_date": "2023-07-21T14:35:42.654321"
+            }
+        }
+
+        # Call the function to remove an etag from the cache
+        remove_from_etag_cache("https://dummyurl.com/feed1.xml", etag_cache)
+
+        # Assert that the etag has been removed from the cache
+        assert "https://dummyurl.com/feed1.xml" not in etag_cache
+
+    def test_remove_nonexistent_from_etag_cache(self):
+        # Create a sample etag_cache dictionary
+        etag_cache = {
+            "https://dummyurl.com/feed1.xml": {
+                "etag": "etag1",
+                "feed_name": "Feed 1",
+                "feed_organization": "Organization 1",
+                "download_date": "2023-07-21T14:30:16.123456"
+            },
+            "https://dummyurl.com/feed2.xml": {
+                "etag": "etag2",
+                "feed_name": "Feed 2",
+                "feed_organization": "Organization 2",
+                "download_date": "2023-07-21T14:35:42.654321"
+            }
+        }
+
+        # Call the function to remove an etag that does not exist in the cache
+        remove_from_etag_cache("https://nonexistenturl.com/feed3.xml", etag_cache)
+
+        # Assert that the cache has not been modified
+        assert len(etag_cache) == 2
