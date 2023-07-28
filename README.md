@@ -1,4 +1,4 @@
-# Collectress
+<img width="1020" alt="image" src="https://github.com/stratosphereips/collectress/assets/2458879/0871f21b-16c5-4101-9c3f-349864237bb4">
 
 [![Python package](https://github.com/stratosphereips/collectress/actions/workflows/python-checks.yml/badge.svg)](https://github.com/stratosphereips/collectress/actions/workflows/python-checks.yml)
 [![Validate-YAML](https://github.com/stratosphereips/collectress/actions/workflows/validate-yml.yml/badge.svg)](https://github.com/stratosphereips/collectress/actions/workflows/validate-yml.yml)
