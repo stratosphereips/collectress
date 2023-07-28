@@ -115,24 +115,23 @@ def copy_file_from_cache(root_dir, feed):
             today_date_str,
             f"{today_date_str.replace('/', '_')}_{feed['org']}_{feed['name']}.txt.gz")
 
-    # Check if yesterday's file exists
-    # If yesterday file is not there, do not copy
-    if not os.path.isfile(yesterday_file_path):
-        return False
-
-    # Check if today's file exists
-    # If today file is already there, do not copy
-    # considering that content was not_modified
+    # Case 1: check if today's file exists
+    #         - Content was not modified and file exists = true = no action
     if os.path.isfile(today_file_path):
         return True
 
-    # Copy the file
-    try:
-        shutil.copy2(yesterday_file_path, today_file_path)
-    except IOError:
+    # Case 2: today file does not exist, check if yesterday's file exists
+    #         - If yesterday file does not exist = false = no action
+    if not os.path.isfile(yesterday_file_path):
         return False
 
-    return True
+    # Case 3: today file is not there, yesterday file is there
+    #         - Copy the file from yesterday and today = True
+    try:
+        shutil.copy2(yesterday_file_path, today_file_path)
+        return True
+    except IOError:
+        return False
 
 
 def remove_old_etags(etag_cache, cache_file_path):
