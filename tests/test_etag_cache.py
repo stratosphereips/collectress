@@ -134,3 +134,35 @@ class TestEtagCache:
 
         # Assert that the function correctly called json.dump with the correct arguments
         mock_json_dump.assert_called_once_with(etag_cache, mock_file())
+
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.path.isfile')
+    @patch('shutil.copy2')
+    def test_copy_file_from_cache(self, mock_copy, mock_isfile, mock_file):
+        # Setup: create a mock feed and root_dir
+        feed = {'org': 'test_org', 'name': 'test_name'}
+        root_dir = '/path/to/root_dir'
+
+        # Case 1: yesterday's file exists, today's file does not
+        mock_isfile.side_effect = [True, False]
+        assert copy_file_from_cache(root_dir, feed) is True
+        mock_copy.assert_called_once()
+
+        # Reset mock for the next test case
+        mock_copy.reset_mock()
+
+        # Case 2: yesterday's file does not exist
+        mock_isfile.side_effect = [False, False]
+        assert copy_file_from_cache(root_dir, feed) is False
+        mock_copy.assert_not_called()
+
+        # Case 3: yesterday's file exists, today's file also exists
+        mock_isfile.side_effect = [True, True]
+        assert copy_file_from_cache(root_dir, feed) is True
+        mock_copy.assert_not_called()
+
+        # Case 4: IOError when attempting to copy file
+        mock_isfile.side_effect = [True, False]
+        mock_copy.side_effect = IOError()
+        assert copy_file_from_cache(root_dir, feed) is False
