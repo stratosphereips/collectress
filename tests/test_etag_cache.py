@@ -4,6 +4,8 @@ import sys
 import tempfile
 from os import path
 from unittest.mock import ANY
+from unittest.mock import patch
+from unittest.mock import mock_open
 sys.path.append( path.dirname(path.dirname( path.abspath(__file__) ) ))
 from lib.etag_cache import load_etag_cache
 from lib.etag_cache import add_to_etag_cache
@@ -109,3 +111,26 @@ class TestEtagCache:
             "feed_organization": "Organization 2",
             "download_date": ANY  # We can't know the exact datetime
         }
+
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('json.dump')
+    def test_save_etag_cache(self, mock_json_dump, mock_file):
+        # Create a sample etag_cache dictionary
+        etag_cache = {
+            "https://dummyurl.com/feed1.xml": {
+                "etag": "etag1",
+                "feed_name": "Feed 1",
+                "feed_organization": "Organization 1",
+                "download_date": "2023-07-21T14:30:16.123456"
+            }
+        }
+
+        # Call the function to save the etag cache
+        save_etag_cache("etag_cache.json", etag_cache)
+
+        # Assert that the function correctly called the built-in open function
+        mock_file.assert_called_once_with("etag_cache.json", 'w', encoding='utf-8')
+
+        # Assert that the function correctly called json.dump with the correct arguments
+        mock_json_dump.assert_called_once_with(etag_cache, mock_file())
