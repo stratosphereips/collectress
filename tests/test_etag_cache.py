@@ -2,6 +2,8 @@
 import json
 import sys
 import tempfile
+from datetime import datetime
+from datetime import timedelta
 from os import path
 from unittest.mock import ANY
 from unittest.mock import patch
@@ -170,3 +172,42 @@ class TestEtagCache:
         mock_isfile.side_effect = [True, False]
         mock_copy.side_effect = IOError()
         assert copy_file_from_cache(root_dir, feed) is False
+
+
+    @patch('json.dump')
+    def test_remove_old_etags(self, mock_json_dump):
+        # Case 1: ETag cache is empty
+        etag_cache = {}
+        remove_old_etags(etag_cache, "etag_cache.json")
+        mock_json_dump.assert_called_once_with(etag_cache, ANY)
+
+        # Reset mock for the next test case
+        mock_json_dump.reset_mock()
+
+        # Case 2: ETag cache contains some ETags that are less than 24 hours old
+        etag_cache = {
+            "https://dummyurl.com/feed1.xml": {
+                "etag": "\"etag1\"",
+                "feed_name": "Feed 1",
+                "feed_organization": "Organization 1",
+                "download_date": (datetime.now() - timedelta(hours=23)).isoformat()
+            }
+        }
+        remove_old_etags(etag_cache, "etag_cache.json")
+        mock_json_dump.assert_called_once_with(etag_cache, ANY)
+
+        # Reset mock for the next test case
+        mock_json_dump.reset_mock()
+
+        # Case 3: ETag cache contains some ETags that are more than 24 hours old
+        etag_cache = {
+            "https://dummyurl.com/feed1.xml": {
+                "etag": "\"etag1\"",
+                "feed_name": "Feed 1",
+                "feed_organization": "Organization 1",
+                "download_date": (datetime.now() - timedelta(hours=25)).isoformat()
+            }
+        }
+        expected_etag_cache = {}  # After removing the old ETag, the cache should be empty
+        remove_old_etags(etag_cache, "etag_cache.json")
+        mock_json_dump.assert_called_once_with(expected_etag_cache, ANY)
