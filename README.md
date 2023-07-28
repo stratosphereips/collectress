@@ -41,6 +41,14 @@ Parameters:
                         The root of the output directory
 ```
 
+## Usage Docker
+
+Collectress can be used through its Docker image:
+
+```bash
+docker run --rm -e TZ=$(readlink /etc/localtime | sed -e 's,/usr/share/zoneinfo/,,' ) -v ${PWD}/data_feeds.yml:/collectress/data_feeds.yml -v ${PWD}/log.json:/collectress/log.json -v ${PWD}/etag_cache.json:/collectress/etag_cache.json -v ${PWD}/data_output:/data ghcr.io/stratosphereips/collectress:main python collectress.py -f data_feeds.yml -e etag_cache.json -w /data
+```
+
 # About
 
 This tool was developed at the Stratosphere Laboratory at the Czech Technical University in Prague. 
