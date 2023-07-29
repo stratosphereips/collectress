@@ -22,6 +22,7 @@ from datetime import datetime
 import logging
 import requests
 import yaml
+from tqdm import tqdm
 from pythonjsonlogger import jsonlogger
 from lib.etag_cache import load_etag_cache
 from lib.etag_cache import add_to_etag_cache
@@ -257,7 +258,7 @@ def main(): # pylint: disable=too-many-locals
     error_rate = 0
 
     # For each feed in the YAML file
-    for feed in feeds:
+    for feed in tqdm(feeds):
         # Increase feeds processed
         total_feeds_processed += 1
 
